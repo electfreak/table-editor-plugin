@@ -10,6 +10,13 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow factoryClass="org.jetbrains.plugins.template.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+
+        <fileType name="CSV"
+                  extensions="csv"
+                  language="CSV"
+                  fieldName="INSTANCE"
+                  implementationClass="org.jetbrains.plugins.template.ui.CsvFileType"/>
+        <fileEditorProvider implementation="org.jetbrains.plugins.template.ui.CsvFileEditorProvider"/>
     </extensions>
 
     <applicationListeners>
