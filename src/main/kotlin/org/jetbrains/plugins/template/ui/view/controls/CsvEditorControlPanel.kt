@@ -10,8 +10,6 @@ import javax.swing.table.DefaultTableModel
 
 
 class CsvEditorControlPanel : JPanel(GridLayout()), Disposable {
-    private val panel = JPanel()
-
     init {
         val data = Array(100) {
             arrayOfNulls<Any>(
@@ -44,12 +42,13 @@ class CsvEditorControlPanel : JPanel(GridLayout()), Disposable {
 
         // Создаем таблицу с моделью
         val table = JTable(model)
-
         table.setRowHeight(25)
+        table.autoResizeMode = JTable.AUTO_RESIZE_OFF
 
         // Устанавливаем предпочтительную ширину столбцов
         for (i in 0 until table.columnCount) {
-            table.columnModel.getColumn(i).setPreferredWidth(50)
+//            table.columnModel.getColumn(i).setPreferredWidth(50)
+            table.columnModel.getColumn(i).minWidth = 50
         }
 
 
@@ -63,27 +62,28 @@ class CsvEditorControlPanel : JPanel(GridLayout()), Disposable {
         rowHeaderTable.setRowHeight(25)
         rowHeaderTable.setEnabled(false)
         rowHeaderTable.tableHeader.setReorderingAllowed(false)
+        rowHeaderTable.autoResizeMode = JTable.AUTO_RESIZE_OFF
 
         // Настройка отображения заголовков строк
         for (i in 0 until rowHeaderTable.columnCount) {
-            rowHeaderTable.columnModel.getColumn(i).setPreferredWidth(50)
+//            rowHeaderTable.columnModel.getColumn(i).setPreferredWidth(50)
+            rowHeaderTable.columnModel.getColumn(i).minWidth = 50
         }
 
         // Оборачиваем таблицу в JScrollPane для поддержки прокрутки
-        val scrollPane = JScrollPane(table)
+        val scrollPane = JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED)
 
         // Настраиваем отображение заголовков строк в JScrollPane
         scrollPane.setRowHeaderView(rowHeaderTable)
-        scrollPane.setCorner(JScrollPane.UPPER_LEFT_CORNER, rowHeaderTable.tableHeader)
-//        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS)
+//        scrollPane.setCorner(JScrollPane.UPPER_LEFT_CORNER, rowHeaderTable.tableHeader)
 //        scrollPane.horizontalScrollBar.preferredSize = Dimension(scrollPane.width, 20)
+//        scrollPane.preferredSize = Dimension(Int.MAX_VALUE, 500)
 
         // Добавляем JScrollPane в JPanel
-        val panel = JPanel(BorderLayout())
-        panel.add(scrollPane, BorderLayout.CENTER)
-//        panel.preferredSize = Dimension(Int.MAX_VALUE, 500)
-//        panel.layout = FlowLayout(FlowLayout.CENTER, 0, 0)
-        add(panel, Component.CENTER_ALIGNMENT)
+//        val panel = JPanel(BorderLayout())
+//        panel.add(scrollPane, BorderLayout.CENTER)
+//        add(panel, Component.CENTER_ALIGNMENT)
+        add(scrollPane, BorderLayout.CENTER)
     }
 
     override fun dispose() = Unit
