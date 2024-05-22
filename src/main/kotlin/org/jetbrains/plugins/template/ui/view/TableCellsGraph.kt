@@ -1,5 +1,7 @@
 package org.jetbrains.plugins.template.ui.view
 
+class CyclicDependencyError(s: String, val cell: Pair<Int, Int>) : Exception(s)
+
 class TableCellsGraph(dependencies: MutableMap<Pair<Int, Int>, MutableSet<Pair<Int, Int>>>) {
     private data class Node(
         val id: Pair<Int, Int>,
@@ -21,7 +23,7 @@ class TableCellsGraph(dependencies: MutableMap<Pair<Int, Int>, MutableSet<Pair<I
 
     private fun addEdgeFromDependency(from: Pair<Int, Int>, to: Pair<Int, Int>) {
         if (from == to) {
-            throw Error("Recursive dependency")
+            throw CyclicDependencyError("Recursive dependency", from)
         }
 
         val fromNode = nodes.find { it.id == from } ?: Node(from).also { nodes.add(it) }
@@ -35,7 +37,7 @@ class TableCellsGraph(dependencies: MutableMap<Pair<Int, Int>, MutableSet<Pair<I
         for (child in node.children) {
             when (child.state) {
                 Node.State.NotVisited -> dfs(child, topSort)
-                Node.State.InProcess -> throw Error("cycle")
+                Node.State.InProcess -> throw CyclicDependencyError("cycle", node.id)
                 Node.State.Visited -> continue
             }
         }
@@ -46,13 +48,9 @@ class TableCellsGraph(dependencies: MutableMap<Pair<Int, Int>, MutableSet<Pair<I
 
     private fun topSort(): List<Pair<Int, Int>> {
         val sorted = mutableListOf<Pair<Int, Int>>()
-        try {
-            for (node in nodes) {
-                if (node.state == Node.State.NotVisited)
-                    dfs(node, sorted)
-            }
-        } catch (e: Error) {
-            throw e
+        for (node in nodes) {
+            if (node.state == Node.State.NotVisited)
+                dfs(node, sorted)
         }
 
         return sorted.reversed()

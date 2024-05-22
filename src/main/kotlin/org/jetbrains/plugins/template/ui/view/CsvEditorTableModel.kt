@@ -6,8 +6,6 @@ import javax.swing.table.DefaultTableModel
 class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) : DefaultTableModel(data, columnNames) {
     val formulas: MutableMap<Pair<Int, Int>, String> = mutableMapOf()
     private val dependencies: MutableMap<Pair<Int, Int>, MutableSet<Pair<Int, Int>>> = mutableMapOf()
-    private val formulasOrder
-        get() = TableCellsGraph(dependencies).getOrder()
 
     override fun setValueAt(value: Any?, row: Int, column: Int) {
         if (value is String && value.startsWith("=")) {
@@ -22,24 +20,28 @@ class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) 
     }
 
     private fun updateFormulas() {
-        formulasOrder.forEach { (row, col) ->
-            val formula = formulas[row to col]
-            if (formula != null) {
-                val result = evaluateFormula(formula.substring(1), row, col)
-                super.setValueAt(result, row, col)
-            }
+        val cellsOrdered = try {
+            TableCellsGraph(dependencies).getOrder()
+        } catch (e: CyclicDependencyError) {
+            formulas.remove(e.cell)
+            dependencies.remove(e.cell)
+            super.setValueAt("<was in dependency cycle>", e.cell.first, e.cell.second)
+            TableCellsGraph(dependencies).getOrder()
         }
-    }
 
-    private fun updateDependentCells(row: Int, column: Int) {
-        val cell = Pair(row, column)
-        dependencies[cell]?.forEach { dependentCell ->
-            val (depRow, depCol) = dependentCell
-            val formula = formulas[dependentCell]
-            if (formula != null) {
-                val result = evaluateFormula(formula.substring(1), depRow, depCol)
-                super.setValueAt(result, depRow, depCol)
+        cellsOrdered.forEach { (row, col) ->
+            val formula = formulas[row to col] ?: return@forEach
+
+            val result = try {
+                evaluateFormula(formula.substring(1), row, col)
+            } catch (e: Exception) {
+                formulas.remove(row to col)
+                dependencies.remove(row to col)
+                super.setValueAt("<could not execute formula>", row, col)
+                return@forEach
             }
+
+            super.setValueAt(result, row, col)
         }
     }
 

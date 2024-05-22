@@ -13,7 +13,6 @@ import javax.swing.table.DefaultTableModel
 import javax.swing.table.TableCellEditor
 import javax.swing.table.TableCellRenderer
 
-
 class FormulaCellRenderer(private val model: CsvEditorTableModel, private val defaultRenderer: TableCellRenderer) :
     TableCellRenderer {
     private val textField = JTextField()
@@ -26,7 +25,7 @@ class FormulaCellRenderer(private val model: CsvEditorTableModel, private val de
         column: Int
     ): Component {
         return if (hasFocus) {
-            val formula = model.formulas[Pair(row, column)]
+            val formula = model.formulas[Pair(row, column)] // TODO data class
             textField.text = formula ?: value?.toString() ?: ""
             textField
         } else {
@@ -49,14 +48,14 @@ class FormulaCellEditor(private val model: CsvEditorTableModel) : AbstractCellEd
         row: Int,
         column: Int
     ): Component {
-        val formula = model.formulas[Pair(row, column)]
+        val formula = model.formulas[Pair(row, column)] // TODO data class
         textField.text = formula ?: value?.toString() ?: ""
         return textField
     }
 
     override fun isCellEditable(anEvent: java.util.EventObject?): Boolean {
         if (anEvent is MouseEvent) {
-            return anEvent.clickCount >= 2
+            return anEvent.clickCount > 1
         }
         return true
     }
@@ -106,7 +105,7 @@ class CsvEditorTableComponent(private var rows: Int, private var cols: Int) {
             tableHeader.setReorderingAllowed(false)
             autoResizeMode = JTable.AUTO_RESIZE_OFF
         }
-
+//        How to add column/row:
 //        model.addColumn(null)
 //        model.addRow(arrayOfNulls<Any>(cols))
 //        (rowHeaderTable.model as DefaultTableModel).addRow(arrayOfNulls<Any>(cols))

@@ -26,11 +26,13 @@ class ParserTests {
     @ParameterizedTest
     @MethodSource("expressionToResult")
     fun testEvaluate(expression: String, value: Double) {
-        assertEquals(TermSolver.evaluate(expression), value)
+        assertEquals(value, TermSolver.evaluate(expression))
     }
 
     @Test
     fun test() {
+        println(TermSolver.inputToRpnTokens("1+2*3"))
+        println(TermParser.inputToTokens("1+2*3"))
         assertEquals(true, true)
     }
 }
