@@ -3,7 +3,7 @@ package org.jetbrains.plugins.template.termsolver
 import java.util.*
 
 object TermSolver {
-    fun strToRpnTokens(input: String): List<Any> {
+    private fun strToRpnTokens(input: String): List<Any> {
         val tokens = mutableListOf<Any>()
         val stack = ArrayDeque<Any>()
 
@@ -55,7 +55,7 @@ object TermSolver {
         return tokens
     }
 
-    fun evaluateRpn(tokens: List<Any>): Double {
+    private fun evaluateRpn(tokens: List<Any>): Double {
         val stack = ArrayDeque<Any>()
         for (token in tokens) {
             when (token) {
@@ -72,4 +72,6 @@ object TermSolver {
 
         return stack.removeLast() as Double
     }
+
+    fun evaluate(expression: String) = evaluateRpn(strToRpnTokens(expression))
 }

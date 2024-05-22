@@ -1,10 +1,7 @@
 package org.jetbrains.plugins.template.ui.view
 
-import javax.swing.DefaultCellEditor
-import javax.swing.JTextField
-import javax.swing.event.TableModelListener
+import org.jetbrains.plugins.template.termsolver.TermSolver
 import javax.swing.table.DefaultTableModel
-import javax.swing.table.TableCellEditor
 
 class TableCellsGraph(dependencies: MutableMap<Pair<Int, Int>, MutableSet<Pair<Int, Int>>>) {
     private data class Node(
@@ -23,11 +20,13 @@ class TableCellsGraph(dependencies: MutableMap<Pair<Int, Int>, MutableSet<Pair<I
                 addEdgeFromDependency(fromCell, toCell)
             }
         }
-
-        println("nodes: '$nodes'")
     }
 
     private fun addEdgeFromDependency(from: Pair<Int, Int>, to: Pair<Int, Int>) {
+        if (from == to) {
+            throw Error("Recursive dependency")
+        }
+
         val fromNode = nodes.find { it.id == from } ?: Node(from).also { nodes.add(it) }
         val toNode = nodes.find { it.id == to } ?: Node(to).also { nodes.add(it) }
         fromNode.children.add(toNode)
@@ -76,24 +75,30 @@ class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) 
     override fun setValueAt(value: Any?, row: Int, column: Int) {
         if (value is String && value.startsWith("=")) {
             formulas[Pair(row, column)] = value
-            super.setValueAt(evaluateFormula(value, row, column), row, column)
-            return
+            updateDependencies(value.substring(1), row, column)
+        } else {
+            formulas.remove(Pair(row, column))
+            super.setValueAt(value, row, column)
         }
+        println("dependencies: $dependencies")
+        updateFormulas()
+    }
 
-        formulas.remove(Pair(row, column))
-        super.setValueAt(value, row, column)
-        updateDependentCells(row, column)
+    private fun updateFormulas() {
+        formulasOrder.forEach { (row, col) ->
+            val formula = formulas[row to col]
+            if (formula != null) {
+                val result = evaluateFormula(formula.substring(1), row, col)
+                super.setValueAt(result, row, col)
+            }
+        }
     }
 
     private fun updateDependentCells(row: Int, column: Int) {
-        println("update dependent cells $row, $column")
-        println(formulas)
         val cell = Pair(row, column)
         dependencies[cell]?.forEach { dependentCell ->
             val (depRow, depCol) = dependentCell
             val formula = formulas[dependentCell]
-            println("dependent cell: $depRow, $depCol, $formula")
-            println("formulas order: $formulasOrder")
             if (formula != null) {
                 val result = evaluateFormula(formula.substring(1), depRow, depCol)
                 super.setValueAt(result, depRow, depCol)
@@ -101,28 +106,35 @@ class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) 
         }
     }
 
-    private fun evaluateFormula(formula: String, formulaRow: Int, formulaColumn: Int): Any {
-        val regex = Regex("([A-Z]+)([0-9]+)")
-        val matchResult = regex.findAll(formula)
-        var result = 0.0
+    private fun colByHeader(header: String) = header.fold(0) { acc, char -> (char - 'A' + 1) + acc * 26 }
+    private fun updateDependencies(formula: String, formulaRow: Int, formulaColumn: Int) {
+        val regex = Regex("([A-Z]+)(\\d+)")
 
-        for (match in matchResult) {
-            val column = match.groups[1]!!.value
-            val row = match.groups[2]!!.value.toInt() - 1
-
-            val colIndex = column[0] - 'A'
-            val cellValue = getValueAt(row, colIndex)
-
-            if (cellValue is Number) {
-                result += cellValue.toDouble()
-            } else if (cellValue is String) {
-                result += cellValue.toDoubleOrNull() ?: 0.0
-            }
-
+        fun processCellAddress(col: Int, row: Int) {
             val dependentCell = Pair(formulaRow, formulaColumn)
-            dependencies.getOrPut(Pair(row, colIndex)) { mutableSetOf() }.add(dependentCell)
+            dependencies.getOrPut(Pair(row, col)) { mutableSetOf() }.add(dependentCell)
         }
 
-        return result
+        val matches = regex.findAll(formula)
+
+        for (match in matches) {
+            val (letters, number) = match.destructured
+            processCellAddress(colByHeader(letters) - 1, number.toInt() - 1)
+        }
+    }
+
+    private fun evaluateFormula(formula: String, formulaRow: Int, formulaColumn: Int): Any {
+        val regex = Regex("([A-Z]+)(\\d+)")
+
+        fun processCellAddress(col: Int, row: Int): String {
+            return getValueAt(row, col)?.toString() ?: ""
+        }
+
+        val expression = regex.replace(formula) { matchResult ->
+            val (letters, number) = matchResult.destructured
+            processCellAddress(colByHeader(letters) - 1, number.toInt() - 1)
+        }
+
+        return TermSolver.evaluate(expression)
     }
 }

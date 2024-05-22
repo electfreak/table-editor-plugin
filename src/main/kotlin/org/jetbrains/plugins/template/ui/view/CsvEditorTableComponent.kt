@@ -3,11 +3,14 @@ package org.jetbrains.plugins.template.ui.view
 import com.intellij.ui.components.JBScrollPane
 import java.awt.Component
 import java.awt.Dimension
+import java.awt.event.MouseEvent
+import javax.swing.AbstractCellEditor
 import javax.swing.JScrollPane
 import javax.swing.JTable
 import javax.swing.JTextField
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.DefaultTableModel
+import javax.swing.table.TableCellEditor
 import javax.swing.table.TableCellRenderer
 
 
@@ -32,6 +35,33 @@ class FormulaCellRenderer(private val model: CsvEditorTableModel, private val de
     }
 }
 
+class FormulaCellEditor(private val model: CsvEditorTableModel) : AbstractCellEditor(), TableCellEditor {
+    private val textField = JTextField()
+
+    override fun getCellEditorValue(): Any {
+        return textField.text
+    }
+
+    override fun getTableCellEditorComponent(
+        table: JTable,
+        value: Any?,
+        isSelected: Boolean,
+        row: Int,
+        column: Int
+    ): Component {
+        val formula = model.formulas[Pair(row, column)]
+        textField.text = formula ?: value?.toString() ?: ""
+        return textField
+    }
+
+    override fun isCellEditable(anEvent: java.util.EventObject?): Boolean {
+        if (anEvent is MouseEvent) {
+            return anEvent.clickCount >= 2
+        }
+        return true
+    }
+}
+
 class CsvEditorTableComponent(private var rows: Int, private var cols: Int) {
     val scrollPane: JScrollPane
     private val table: JTable
@@ -51,12 +81,14 @@ class CsvEditorTableComponent(private var rows: Int, private var cols: Int) {
             setRowHeight(25)
             autoResizeMode = JTable.AUTO_RESIZE_OFF
             tableHeader.reorderingAllowed = false
+            putClientProperty("JTable.autoStartsEdit", false)
         }
 
         for (i in 0 until table.columnCount) {
             table.columnModel.getColumn(i).apply {
                 minWidth = 50
                 cellRenderer = FormulaCellRenderer(model, DefaultTableCellRenderer())
+                cellEditor = FormulaCellEditor(model)
             }
         }
 
