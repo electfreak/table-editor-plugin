@@ -4,14 +4,13 @@ import kotlin.math.pow
 
 interface Operators {
     val priority: Int;
-    val char: Char
 }
 
 enum class BinaryOperators(
     override val priority: Int,
     val isRightAssociative: Boolean,
     val binaryOperator: (Double, Double) -> Double,
-    override val char: Char
+    val char: Char
 ) : Operators {
     PLUS(1, false, { l, r -> l + r }, '+'),
     MINUS(1, false, { l, r -> l - r }, '-'),
@@ -31,9 +30,17 @@ enum class BinaryOperators(
 enum class UnaryOperators(
     override val priority: Int,
     val unaryOperator: (Double) -> Double,
-    override val char: Char,
+    val brackets: Boolean,
+    val form: String,
 ) : Operators {
-    NEGATION(4, { n -> -n }, '-');
+    NEGATION(4, { n -> -n }, false, "-"),
+    SQRT(4, { n -> kotlin.math.sqrt(n) }, true, "sqrt");
 
     fun compute(n: Double) = unaryOperator(n)
+    fun isOnlyUnary() = BinaryOperators.values().map { it.char.toString() }.contains(form)
 }
+
+val mixedOperators =
+    UnaryOperators.values().map { it.form }.intersect(
+        BinaryOperators.values().map { it.char.toString() }.toSet()
+    )
