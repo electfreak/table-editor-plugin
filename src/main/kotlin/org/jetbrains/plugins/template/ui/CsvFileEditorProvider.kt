@@ -14,12 +14,8 @@ object CsvLanguage : Language("CSV", "application/csv")
 
 object CsvFileType : LanguageFileType(CsvLanguage) {
     override fun getIcon() = AllIcons.FileTypes.Text
-    //TODO: add icon
-
     override fun getName() = "CSV"
-
     override fun getDefaultExtension() = "csv"
-
     //TODO: Add proper description
     override fun getDescription() = "CSV"
 }
