@@ -7,65 +7,78 @@ object TermSolver {
         prev == null || prev == '('
 
     private fun getOperator(input: String, pos: Int, prev: Any?): Operators {
-        val unaryOperator = UnaryOperators.values().find { input.drop(pos).startsWith(it.form) }
-        if (unaryOperator != null && (!unaryOperator.isOnlyUnary() || isLikelyUnary(prev))) {
+        val unaryOperator = UnaryOperators.entries.find { input.drop(pos).startsWith(it.form) }
+        println("unaryOperator: $unaryOperator")
+        println("prev: $prev")
+
+        if (unaryOperator != null && (unaryOperator.isOnlyUnary() || isLikelyUnary(prev))) {
             return unaryOperator
         }
 
-        return BinaryOperators.operatorByChar[input[pos]] ?: throw Error("Ivalid expression")
+        return BinaryOperators.operatorByChar[input[pos]] ?: throw Error("Invalid expression")
     }
 
     private fun strToRpnTokens(input: String): List<Any> {
         val tokens = mutableListOf<Any>()
         val stack = ArrayDeque<Any>()
-        var prevOperand = false
         var prev: Any? = null
 
-        var i = 0
-        while (i < input.length) {
-            val currChar = input[i]
-            if (currChar.isDigit()) {
-                var j = i + 1
-                while (j < input.length && (input[j].isDigit() || input[j] == '.')) {
-                    ++j
+        var pos = 0
+        while (pos < input.length) {
+            val currChar = input[pos]
+            when {
+                currChar.isDigit() -> {
+                    var posRight = pos + 1
+                    while (posRight < input.length && (input[posRight].isDigit() || input[posRight] == '.')) {
+                        ++posRight
+                    }
+
+                    val operand = input.slice(pos until posRight).toDouble()
+                    tokens.add(operand)
+                    prev = operand
+                    pos = posRight
+                    continue
                 }
 
-                @OptIn(kotlin.ExperimentalStdlibApi::class)
-                val operand = input.slice(i..<j).toDouble()
-                tokens.add(operand)
-                prev = operand
-                i = j
-                continue
-            }
-
-            if (currChar == '(') {
-                stack.addLast('(')
-            }
-
-            if (currChar == ')') {
-                while (stack.last != '(') {
-                    tokens.add(stack.removeLast())
+                currChar == '(' -> {
+                    stack.addLast('(')
+                    prev = '('
                 }
 
-                stack.removeLast()
-            }
-
-            when (val operator = getOperator(input, i, prev)) {
-                is UnaryOperators -> {
-                    stack.addLast(operator)
-                }
-
-                is BinaryOperators -> {
-                    while (!stack.isEmpty() && stack.last is BinaryOperators && (stack.last as BinaryOperators).priority >= operator.priority) {
+                currChar == ')' -> {
+                    while (stack.last != '(') {
                         tokens.add(stack.removeLast())
                     }
 
-                    stack.addLast(operator)
+                    stack.removeLast()
+                    prev = ')'
+                }
+
+                else -> {
+                    val operator = getOperator(input, pos, prev)
+                    if (operator is UnaryOperators) {
+                        stack.addLast(operator)
+                        pos += operator.form.length
+                        prev = operator
+                        continue
+                    }
+
+                    if (operator is BinaryOperators) {
+                        while (
+                            !stack.isEmpty() &&
+                            (stack.last is UnaryOperators ||
+                                    (stack.last is BinaryOperators && (stack.last as BinaryOperators).priority >= operator.priority))
+                        ) {
+                            tokens.add(stack.removeLast())
+                        }
+
+                        stack.addLast(operator)
+                        prev = operator
+                    }
                 }
             }
 
-            prev = currChar
-            ++i
+            ++pos
         }
 
         while (!stack.isEmpty()) {

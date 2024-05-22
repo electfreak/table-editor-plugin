@@ -13,6 +13,10 @@ plugins {
     alias(libs.plugins.kover) // Gradle Kover Plugin
 }
 
+tasks.test {
+    useJUnitPlatform()
+}
+
 group = properties("pluginGroup").get()
 version = properties("pluginVersion").get()
 
@@ -24,6 +28,7 @@ repositories {
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
 //    implementation(libs.annotations)
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
 }
 
 // Set the JVM language level used to build the project.

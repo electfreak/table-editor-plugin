@@ -37,10 +37,5 @@ enum class UnaryOperators(
     SQRT(4, { n -> kotlin.math.sqrt(n) }, true, "sqrt");
 
     fun compute(n: Double) = unaryOperator(n)
-    fun isOnlyUnary() = BinaryOperators.values().map { it.char.toString() }.contains(form)
+    fun isOnlyUnary() = !BinaryOperators.values().map { it.char.toString() }.contains(form)
 }
-
-val mixedOperators =
-    UnaryOperators.values().map { it.form }.intersect(
-        BinaryOperators.values().map { it.char.toString() }.toSet()
-    )
