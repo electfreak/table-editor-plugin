@@ -3,14 +3,14 @@ package org.jetbrains.plugins.template.termsolver
 import kotlin.math.pow
 
 interface Token
-data class Operand(val value: Double): Token
-enum class Brackets: Token {
+data class Operand(val value: Double) : Token
+enum class Brackets : Token {
     Left,
     Right
 }
 
-interface Operator: Token {
-    val priority: Int;
+interface Operator : Token {
+    val priority: Int
 }
 
 enum class BinaryOperator(

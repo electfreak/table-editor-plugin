@@ -26,8 +26,4 @@ class CsvEditorViewComponent(project: Project, private val virtualFile: VirtualF
     }
 
     override fun dispose() = Unit
-
-    companion object {
-//        private val logger = logger<PdfEditorViewComponent>()
-    }
 }

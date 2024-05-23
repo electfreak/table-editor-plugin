@@ -16,7 +16,6 @@ object CsvFileType : LanguageFileType(CsvLanguage) {
     override fun getIcon() = AllIcons.FileTypes.Text
     override fun getName() = "CSV"
     override fun getDefaultExtension() = "csv"
-    //TODO: Add proper description
     override fun getDescription() = "CSV"
 }
 
@@ -26,6 +25,7 @@ class CsvFileEditorProvider : AsyncFileEditorProvider, DumbAware {
     init {
         println("init provider")
     }
+
     override fun getEditorTypeId() = "CSV"
 
     override fun accept(project: Project, file: VirtualFile): Boolean {
@@ -33,15 +33,13 @@ class CsvFileEditorProvider : AsyncFileEditorProvider, DumbAware {
     }
 
     override fun createEditor(project: Project, file: VirtualFile): FileEditor {
-        println(">>> create editor")
         return createEditorAsync(project, file).build()
     }
 
     override fun getPolicy() = FileEditorPolicy.HIDE_DEFAULT_EDITOR
 
     override fun createEditorAsync(project: Project, file: VirtualFile): AsyncFileEditorProvider.Builder {
-        println("async call")
-        return object: AsyncFileEditorProvider.Builder() {
+        return object : AsyncFileEditorProvider.Builder() {
             override fun build(): FileEditor = CsvFileEditor(project, file)
         }
     }
