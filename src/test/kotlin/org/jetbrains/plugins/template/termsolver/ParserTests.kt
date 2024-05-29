@@ -26,8 +26,8 @@ class ParserTests {
         @JvmStatic
         fun expressionToTokens(): List<Arguments> = listOf(
             Arguments.of("", listOf<Token>()),
-            Arguments.of("A1", listOf(CellReference("A", 1))),
-            Arguments.of("ABC123", listOf(CellReference("ABC", 123))),
+            Arguments.of("A1", listOf(Cell("A", 1))),
+            Arguments.of("ABC123", listOf(Cell("ABC", 123))),
             Arguments.of(
                 "1 + 2", listOf(Literal(1.0), BinaryOperator.PLUS, Literal(2.0))
             ),
@@ -41,31 +41,27 @@ class ParserTests {
                     Literal(6.23),
                     BinaryOperator.MULTIPLY,
                     Brackets.Left,
-                    CellReference("A", 1),
+                    Cell("A", 1),
                     BinaryOperator.PLUS,
-                    CellReference("B", 3),
+                    Cell("B", 3),
                     Brackets.Right
                 )
             )
         )
     }
 
+    private val dummyGetValueFromCell = { (row, col): Cell -> (row + col).toDouble() }
+
     @ParameterizedTest
     @MethodSource("expressionToResult")
     fun testEvaluate(expression: String, value: Double) {
-        assertEquals(value, TermSolver.evaluate(expression))
+        assertEquals(value, TermSolver.evaluate(expression, dummyGetValueFromCell))
     }
 
     @ParameterizedTest
     @MethodSource("expressionToTokens")
     fun testParse(expression: String, value: List<Token>) {
+        println(TermParser.inputToTokens(expression))
         assertArrayEquals(value.toTypedArray(), TermParser.inputToTokens(expression).toTypedArray())
-    }
-
-    @Test
-    fun test() {
-        println(TermSolver.inputToRpnTokens("1+2*3"))
-        println(TermParser.inputToTokens("1+2*3"))
-        assertEquals(true, true)
     }
 }

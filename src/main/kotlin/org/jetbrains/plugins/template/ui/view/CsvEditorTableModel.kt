@@ -1,15 +1,13 @@
 package org.jetbrains.plugins.template.ui.view
 
-import org.jetbrains.plugins.template.termsolver.CellReference
+import org.jetbrains.plugins.template.termsolver.Cell
 import org.jetbrains.plugins.template.termsolver.TermParser
 import org.jetbrains.plugins.template.termsolver.TermSolver
 import javax.swing.table.DefaultTableModel
 
-data class Cell(val row: Int, val col: Int)
-
 class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) : DefaultTableModel(data, columnNames) {
     val formulas: MutableMap<Cell, String> = mutableMapOf()
-    private val dependencies: MutableMap<Cell, MutableSet<Cell>> = mutableMapOf()
+    private val dependencies: MutableMap<Cell, Set<Cell>> = mutableMapOf()
 
     override fun setValueAt(value: Any?, row: Int, column: Int) {
         if (value is String && value.startsWith("=")) {
@@ -48,20 +46,17 @@ class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) 
         }
     }
 
-    private fun colByHeader(header: String) = header.fold(0) { acc, char -> (char - 'A' + 1) + acc * 26 }
-
     private fun updateDependencies(formula: String, formulaCell: Cell) {
-        TermParser
+        dependencies[formulaCell] = TermParser
             .inputToTokens(formula)
-            .filterIsInstance<CellReference>()
-            .forEach {
-                dependencies.getOrPut(Cell(it.rowReference - 1, colByHeader(it.colReference) - 1)) { mutableSetOf() }
-                    .add(formulaCell)
-            }
+            .filterIsInstance<Cell>()
+            .toSet()
     }
 
-    private fun getValueByCellReference(cellReference: CellReference) =
-        (getValueAt(cellReference.rowReference - 1, colByHeader(cellReference.colReference) - 1)?.toString() ?: "").toDouble()
+    private fun getValueByCellReference(cell: Cell): Double {
+        val value = getValueAt(cell.row, cell.col)?.toString() ?: error("empty cell")
+        return value.toDouble()
+    }
 
     private fun evaluateFormula(formula: String): Any {
         return TermSolver.evaluate(formula, ::getValueByCellReference)

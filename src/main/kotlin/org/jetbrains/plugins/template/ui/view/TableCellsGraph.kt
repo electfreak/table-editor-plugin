@@ -1,8 +1,10 @@
 package org.jetbrains.plugins.template.ui.view
 
+import org.jetbrains.plugins.template.termsolver.Cell
+
 class CyclicDependencyError(s: String, val cell: Cell) : Exception(s)
 
-class TableCellsGraph(val dependencies: MutableMap<Cell, MutableSet<Cell>>) {
+class TableCellsGraph(val dependencies: MutableMap<Cell, Set<Cell>>) {
     private data class Node(
         val id: Cell,
         val children: MutableList<Node> = mutableListOf(),
@@ -14,9 +16,9 @@ class TableCellsGraph(val dependencies: MutableMap<Cell, MutableSet<Cell>>) {
     private val nodes: MutableSet<Node> = mutableSetOf()
 
     init {
-        for ((fromCell, toCells) in dependencies) {
-            for (toCell in toCells) {
-                addEdgeFromDependency(fromCell, toCell)
+        for ((formulaCell, cellsInFormula) in dependencies) {
+            for (cell in cellsInFormula) {
+                addEdgeFromDependency(cell, formulaCell)
             }
         }
     }

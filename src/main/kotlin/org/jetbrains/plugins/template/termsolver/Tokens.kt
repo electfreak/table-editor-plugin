@@ -1,12 +1,18 @@
 package org.jetbrains.plugins.template.termsolver
 
+import org.jetbrains.plugins.template.cell.colIdByReference
+import org.jetbrains.plugins.template.cell.colReferenceById
 import kotlin.math.pow
 
 interface Token
 interface Operand : Token
 data class Literal(val value: Double) : Operand
-data class CellReference(val colReference: String, val rowReference: Int) : Operand {
-    val length = colReference.length + rowReference.toString().length
+data class Cell(val row: Int, val col: Int) : Operand {
+    val length = colReferenceById(col).length + (row + 1).toString().length
+    constructor(colReference: String, rowReference: Int) : this(
+        rowReference - 1,
+        colIdByReference(colReference)
+    )
 }
 
 enum class Brackets : Token {

@@ -1,6 +1,8 @@
 package org.jetbrains.plugins.template.ui.view
 
 import com.intellij.ui.components.JBScrollPane
+import org.jetbrains.plugins.template.cell.colReferenceById
+import org.jetbrains.plugins.template.termsolver.Cell
 import java.awt.Component
 import java.awt.Dimension
 import java.awt.event.MouseEvent
@@ -72,7 +74,7 @@ class CsvEditorTableComponent(private var rows: Int, private var cols: Int) {
             )
         }
 
-        val columnNames = Array(cols) { i -> getColumnHeaderName(i) }
+        val columnNames = Array(cols) { i -> colReferenceById(i) }
         val model = CsvEditorTableModel(data, columnNames)
         table = JTable(model)
 
@@ -115,10 +117,4 @@ class CsvEditorTableComponent(private var rows: Int, private var cols: Int) {
 
         scrollPane.setRowHeaderView(rowHeaderTable)
     }
-
-    private fun getColumnHeaderName(idx: Int): String =
-        if (idx < 26)
-            ('A' + idx).toString()
-        else
-            getColumnHeaderName(idx / 26 - 1) + ('A' + idx % 26).toString()
 }
