@@ -3,16 +3,18 @@ package org.jetbrains.plugins.template.ui.view
 import org.jetbrains.plugins.template.termsolver.TermSolver
 import javax.swing.table.DefaultTableModel
 
+data class Cell(val row: Int, val col: Int)
+
 class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) : DefaultTableModel(data, columnNames) {
-    val formulas: MutableMap<Pair<Int, Int>, String> = mutableMapOf()
-    private val dependencies: MutableMap<Pair<Int, Int>, MutableSet<Pair<Int, Int>>> = mutableMapOf()
+    val formulas: MutableMap<Cell, String> = mutableMapOf()
+    private val dependencies: MutableMap<Cell, MutableSet<Cell>> = mutableMapOf()
 
     override fun setValueAt(value: Any?, row: Int, column: Int) {
         if (value is String && value.startsWith("=")) {
-            formulas[Pair(row, column)] = value
+            formulas[Cell(row, column)] = value
             updateDependencies(value.substring(1), row, column)
         } else {
-            formulas.remove(Pair(row, column))
+            formulas.remove(Cell(row, column))
             super.setValueAt(value, row, column)
         }
 
@@ -25,18 +27,18 @@ class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) 
         } catch (e: CyclicDependencyError) {
             formulas.remove(e.cell)
             dependencies.remove(e.cell)
-            super.setValueAt("<was in dependency cycle>", e.cell.first, e.cell.second)
+            super.setValueAt("<was in dependency cycle>", e.cell.row, e.cell.col)
             TableCellsGraph(dependencies).getOrder()
         }
 
         cellsOrdered.forEach { (row, col) ->
-            val formula = formulas[row to col] ?: return@forEach
+            val formula = formulas[Cell(row, col)] ?: return@forEach
 
             val result = try {
                 evaluateFormula(formula.substring(1), row, col)
             } catch (e: Exception) {
-                formulas.remove(row to col)
-                dependencies.remove(row to col)
+                formulas.remove(Cell(row, col))
+                dependencies.remove(Cell(row, col))
                 super.setValueAt("<could not execute formula>", row, col)
                 return@forEach
             }
@@ -50,8 +52,8 @@ class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) 
         val regex = Regex("([A-Z]+)(\\d+)")
 
         fun processCellAddress(col: Int, row: Int) {
-            val dependentCell = Pair(formulaRow, formulaColumn)
-            dependencies.getOrPut(Pair(row, col)) { mutableSetOf() }.add(dependentCell)
+            val dependentCell = Cell(formulaRow, formulaColumn)
+            dependencies.getOrPut(Cell(row, col)) { mutableSetOf() }.add(dependentCell)
         }
 
         val matches = regex.findAll(formula)
