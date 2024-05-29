@@ -21,11 +21,6 @@ object CsvFileType : LanguageFileType(CsvLanguage) {
 
 
 class CsvFileEditorProvider : AsyncFileEditorProvider, DumbAware {
-
-    init {
-        println("init provider")
-    }
-
     override fun getEditorTypeId() = "CSV"
 
     override fun accept(project: Project, file: VirtualFile): Boolean {

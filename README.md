@@ -17,10 +17,10 @@ Open any project with and any CSV file
 - minus (both unary and binary): `-`
 - multiply: `*`
 - division: `/`
-- square root: `sqrt()`
+- square root: `sqrt()` (lowercase)
 
-Formula format:
+## Formula format:
 - Braces `(`, `)` are allowed
 - Formulas begin from `=`
-- Cells are written like `COLROW`, example: `A2`
+- Cells are written like `COLROW`, example: `A2` (uppercase)
 - Numbers

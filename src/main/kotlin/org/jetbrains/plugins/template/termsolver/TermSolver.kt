@@ -1,6 +1,5 @@
 package org.jetbrains.plugins.template.termsolver
 
-import ai.grazie.nlp.utils.dropWhitespaces
 import java.util.*
 
 object TermParser {
@@ -17,8 +16,14 @@ object TermParser {
         return BinaryOperator.operatorByChar[input[pos]] ?: error("Invalid expression")
     }
 
-    fun inputToTokens(input: String): MutableList<Token> {
-        val expression = input.dropWhitespaces()
+    private fun getCellReference(input: String, pos: Int): CellReference {
+        val letters = input.drop(pos).takeWhile { it.isLetter() }
+        val digits = input.drop(pos + letters.length).takeWhile { it.isDigit() }.toInt()
+        return CellReference(letters, digits)
+    }
+
+    fun inputToTokens(input: String): List<Token> {
+        val expression = input.filterNot { it.isWhitespace() }
         val tokens = mutableListOf<Token>()
         var pos = 0
         var prev: Token? = null
@@ -27,15 +32,11 @@ object TermParser {
             val currChar = expression[pos]
             when {
                 currChar.isDigit() -> {
-                    var posRight = pos + 1
-                    while (posRight < expression.length && (expression[posRight].isDigit() || expression[posRight] == '.')) {
-                        ++posRight
-                    }
-
-                    val operand = Operand(expression.slice(pos until posRight).toDouble())
+                    val parsedNumber = expression.drop(pos).takeWhile { it.isDigit() || it == '.' }
+                    val operand = Literal(parsedNumber.toDouble())
                     tokens.add(operand)
                     prev = operand
-                    pos = posRight
+                    pos += parsedNumber.length
                     continue
                 }
 
@@ -47,6 +48,14 @@ object TermParser {
                 currChar == ')' -> {
                     tokens.add(Brackets.Right)
                     prev = Brackets.Right
+                }
+
+                currChar.isLetter() && currChar.isUpperCase() -> {
+                    val cellReference = getCellReference(expression, pos)
+                    tokens.add(cellReference)
+                    pos += cellReference.length
+                    prev = cellReference
+                    continue
                 }
 
                 else -> {
@@ -73,16 +82,16 @@ object TermParser {
 }
 
 object TermSolver {
-    fun inputToRpnTokens(input: String): List<Token> {
+    fun inputToRpnTokens(input: String, getValueFromCell: (cellReference: CellReference) -> Double): List<Token> {
         val expression = TermParser.inputToTokens(input)
         val rpn = mutableListOf<Token>()
         val stack = ArrayDeque<Token>()
         for (token in expression) {
             when (token) {
-                is Operand -> {
-                    rpn.add(token)
-                }
+                is Literal -> rpn.add(token)
+                is CellReference -> rpn.add(Literal(getValueFromCell(token)))
 
+                is UnaryOperator -> stack.addLast(token)
                 is BinaryOperator -> {
                     while (
                         !stack.isEmpty() &&
@@ -91,10 +100,6 @@ object TermSolver {
                         rpn.add(stack.removeLast())
                     }
 
-                    stack.addLast(token)
-                }
-
-                is UnaryOperator -> {
                     stack.addLast(token)
                 }
 
@@ -120,7 +125,7 @@ object TermSolver {
         val stack = ArrayDeque<Double>()
         for (token in tokens) {
             when (token) {
-                is Operand -> stack.addLast(token.value)
+                is Literal -> stack.addLast(token.value)
 
                 is UnaryOperator -> {
                     stack.addLast(
@@ -141,5 +146,6 @@ object TermSolver {
         return stack.removeLast() as Double
     }
 
-    fun evaluate(expression: String) = evaluateRpn(inputToRpnTokens(expression))
+    fun evaluate(expression: String, getValueFromCell: (cellReference: CellReference) -> Double) =
+        evaluateRpn(inputToRpnTokens(expression, getValueFromCell))
 }

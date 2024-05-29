@@ -2,7 +2,7 @@ package org.jetbrains.plugins.template.ui.view
 
 class CyclicDependencyError(s: String, val cell: Cell) : Exception(s)
 
-class TableCellsGraph(dependencies: MutableMap<Cell, MutableSet<Cell>>) {
+class TableCellsGraph(val dependencies: MutableMap<Cell, MutableSet<Cell>>) {
     private data class Node(
         val id: Cell,
         val children: MutableList<Node> = mutableListOf(),
@@ -23,6 +23,7 @@ class TableCellsGraph(dependencies: MutableMap<Cell, MutableSet<Cell>>) {
 
     private fun addEdgeFromDependency(from: Cell, to: Cell) {
         if (from == to) {
+            println(dependencies)
             throw CyclicDependencyError("Recursive dependency", from)
         }
 
@@ -37,7 +38,7 @@ class TableCellsGraph(dependencies: MutableMap<Cell, MutableSet<Cell>>) {
         for (child in node.children) {
             when (child.state) {
                 Node.State.NotVisited -> dfs(child, topSort)
-                Node.State.InProcess -> throw CyclicDependencyError("cycle", node.id)
+                Node.State.InProcess -> throw CyclicDependencyError("Cycle", node.id)
                 Node.State.Visited -> continue
             }
         }

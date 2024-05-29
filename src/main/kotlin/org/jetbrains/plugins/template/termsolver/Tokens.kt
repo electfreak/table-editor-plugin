@@ -3,7 +3,12 @@ package org.jetbrains.plugins.template.termsolver
 import kotlin.math.pow
 
 interface Token
-data class Operand(val value: Double) : Token
+interface Operand : Token
+data class Literal(val value: Double) : Operand
+data class CellReference(val colReference: String, val rowReference: Int) : Operand {
+    val length = colReference.length + rowReference.toString().length
+}
+
 enum class Brackets : Token {
     Left,
     Right

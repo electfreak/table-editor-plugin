@@ -1,5 +1,7 @@
 package org.jetbrains.plugins.template.ui.view
 
+import org.jetbrains.plugins.template.termsolver.CellReference
+import org.jetbrains.plugins.template.termsolver.TermParser
 import org.jetbrains.plugins.template.termsolver.TermSolver
 import javax.swing.table.DefaultTableModel
 
@@ -12,7 +14,7 @@ class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) 
     override fun setValueAt(value: Any?, row: Int, column: Int) {
         if (value is String && value.startsWith("=")) {
             formulas[Cell(row, column)] = value
-            updateDependencies(value.substring(1), row, column)
+            updateDependencies(value.substring(1), Cell(row, column))
         } else {
             formulas.remove(Cell(row, column))
             super.setValueAt(value, row, column)
@@ -27,15 +29,14 @@ class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) 
         } catch (e: CyclicDependencyError) {
             formulas.remove(e.cell)
             dependencies.remove(e.cell)
-            super.setValueAt("<was in dependency cycle>", e.cell.row, e.cell.col)
+            super.setValueAt("<${e.localizedMessage}>", e.cell.row, e.cell.col)
             TableCellsGraph(dependencies).getOrder()
         }
 
         cellsOrdered.forEach { (row, col) ->
             val formula = formulas[Cell(row, col)] ?: return@forEach
-
             val result = try {
-                evaluateFormula(formula.substring(1), row, col)
+                evaluateFormula(formula.substring(1))
             } catch (e: Exception) {
                 formulas.remove(Cell(row, col))
                 dependencies.remove(Cell(row, col))
@@ -48,34 +49,21 @@ class CsvEditorTableModel(data: Array<Array<Any?>>, columnNames: Array<String>) 
     }
 
     private fun colByHeader(header: String) = header.fold(0) { acc, char -> (char - 'A' + 1) + acc * 26 }
-    private fun updateDependencies(formula: String, formulaRow: Int, formulaColumn: Int) {
-        val regex = Regex("([A-Z]+)(\\d+)")
 
-        fun processCellAddress(col: Int, row: Int) {
-            val dependentCell = Cell(formulaRow, formulaColumn)
-            dependencies.getOrPut(Cell(row, col)) { mutableSetOf() }.add(dependentCell)
-        }
-
-        val matches = regex.findAll(formula)
-
-        for (match in matches) {
-            val (letters, number) = match.destructured
-            processCellAddress(colByHeader(letters) - 1, number.toInt() - 1)
-        }
+    private fun updateDependencies(formula: String, formulaCell: Cell) {
+        TermParser
+            .inputToTokens(formula)
+            .filterIsInstance<CellReference>()
+            .forEach {
+                dependencies.getOrPut(Cell(it.rowReference - 1, colByHeader(it.colReference) - 1)) { mutableSetOf() }
+                    .add(formulaCell)
+            }
     }
 
-    private fun evaluateFormula(formula: String, formulaRow: Int, formulaColumn: Int): Any {
-        val regex = Regex("([A-Z]+)(\\d+)")
+    private fun getValueByCellReference(cellReference: CellReference) =
+        (getValueAt(cellReference.rowReference - 1, colByHeader(cellReference.colReference) - 1)?.toString() ?: "").toDouble()
 
-        fun processCellAddress(col: Int, row: Int): String {
-            return getValueAt(row, col)?.toString() ?: ""
-        }
-
-        val expression = regex.replace(formula) { matchResult ->
-            val (letters, number) = matchResult.destructured
-            processCellAddress(colByHeader(letters) - 1, number.toInt() - 1)
-        }
-
-        return TermSolver.evaluate(expression)
+    private fun evaluateFormula(formula: String): Any {
+        return TermSolver.evaluate(formula, ::getValueByCellReference)
     }
 }
