@@ -25,7 +25,7 @@ class FormulaCellRenderer(private val model: CsvEditorTableModel, private val de
         column: Int
     ): Component {
         return if (hasFocus) {
-            val formula = model.formulas[Pair(row, column)] // TODO data class
+            val formula = model.formulas[Cell(row, column)] // TODO data class
             textField.text = formula ?: value?.toString() ?: ""
             textField
         } else {
@@ -48,7 +48,7 @@ class FormulaCellEditor(private val model: CsvEditorTableModel) : AbstractCellEd
         row: Int,
         column: Int
     ): Component {
-        val formula = model.formulas[Pair(row, column)] // TODO data class
+        val formula = model.formulas[Cell(row, column)] // TODO data class
         textField.text = formula ?: value?.toString() ?: ""
         return textField
     }

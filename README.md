@@ -1,5 +1,9 @@
 # Table editor plugin
 
+<!-- Plugin description -->
+This plugin adds formulas support to CSV tables.
+<!-- Plugin description end -->
+
 ## How to run:
 Run gradle `runIde` task, e.g. on unix environment:
   ```shell

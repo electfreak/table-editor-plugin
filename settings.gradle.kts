@@ -3,4 +3,4 @@ plugins {
 }
 
 
-rootProject.name = "IntelliJ Platform Plugin Template"
+rootProject.name = "CSV Editor with Formulas"
